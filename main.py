@@ -63,7 +63,7 @@ class Tomograph:
     def reconstruct(self, n_images=1):
         reconstructed_img = np.zeros((self.img.shape[0], self.img.shape[1]))
         i = 0
-        p = self.n_steps * self.n_detectors / n_images
+        p = int(self.n_steps * self.n_detectors / n_images)
         generated_sinogram_flattened = self.generated_sinogram.flatten()
 
         for bresenham_line in self.bresenham_lines:
@@ -99,12 +99,12 @@ initial_img = Image.open('Input/Kwadraty2.jpg').convert('L')
 tomograph = Tomograph(initial_img)
 tomograph.generate_sinogram()
 i = 0
-complete_img = []
 for img in tomograph.reconstruct(n_images=3):
     path = 'Output/Reconstructed_Image/part' + str(i) + '.jpg'
     img.save(path)
-    complete_img = img
     i += 1
+else:
+    complete_img = img
 path = 'Output/Sinogram/sinogram.jpg'
 tomograph.get_sinogram().save(path)
 print(tomograph.rmse(np.asarray(initial_img), np.asarray(complete_img)))
