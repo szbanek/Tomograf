@@ -4,8 +4,7 @@ from skimage.draw import line
 
 
 class Tomograph:
-
-    def __init__(self, img, alpha=.5, n_detectors=500, phi=np.pi):
+    def __init__(self, img, alpha=1, n_detectors=1000, phi=np.pi):
         self.img = img
         self.reshape_img()
         self.img = np.asarray(self.img)
@@ -43,6 +42,7 @@ class Tomograph:
 
     def generate_sinogram(self):
         i = 0
+        sl_filter = self.hamming_filter(self.n_detectors)
         for angle in np.arange(0, np.pi, self.alpha * (np.pi / 180)):
             for detector in range(self.n_detectors):
                 emitter_angle = angle + self.phi / 2 - detector * self.phi / (self.n_detectors - 1)
@@ -53,6 +53,8 @@ class Tomograph:
                 rr, cc = line(emitter_coordX, emitter_coordY, detector_coordX, detector_coordY)
                 self.generated_sinogram[i][detector] += self.img[rr, cc].sum()
                 self.bresenham_lines.append([rr, cc])
+
+            self.generated_sinogram[i] = np.array(np.convolve(self.generated_sinogram[i], sl_filter, 'same'))
             i += 1
             print(i)
 
@@ -74,14 +76,35 @@ class Tomograph:
                 norm_reconstructed_img = self.normalize_img(norm_reconstructed_img)
                 yield Image.fromarray(norm_reconstructed_img).convert('L')
 
+    # Ram-Lak with hamming filter
+    def hamming_filter(self, length):
+        filter = []
+        ham = np.hamming(length)
+        length = int(length/2)
+        for i, j in zip(range(-length, length), ham):
+            if i % 2 != 0:
+                val = ((-4/np.pi**2)/(i**2)) * j
+                filter.append(val)
+            else:
+                filter.append(0)
+        filter[int(length)] = 1
 
-img = Image.open('Input/Kwadraty2.jpg')
-tomograph = Tomograph(img)
+        return filter
+
+    def rmse(self, img1, img2):
+        return np.sqrt(np.mean((img1-img2)**2))
+
+
+initial_img = Image.open('Input/Kwadraty2.jpg').convert('L')
+tomograph = Tomograph(initial_img)
 tomograph.generate_sinogram()
 i = 0
+complete_img = []
 for img in tomograph.reconstruct(n_images=3):
     path = 'Output/Reconstructed_Image/part' + str(i) + '.jpg'
     img.save(path)
+    complete_img = img
     i += 1
 path = 'Output/Sinogram/sinogram.jpg'
 tomograph.get_sinogram().save(path)
+print(tomograph.rmse(np.asarray(initial_img), np.asarray(complete_img)))
