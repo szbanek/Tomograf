@@ -56,7 +56,6 @@ class Tomograph:
 
             self.generated_sinogram[i] = np.array(np.convolve(self.generated_sinogram[i], sl_filter, 'same'))
             i += 1
-            print(i)
 
         self.generated_sinogram = self.normalize_img(self.generated_sinogram)
 
@@ -71,7 +70,6 @@ class Tomograph:
             reconstructed_img[rr, cc] += generated_sinogram_flattened[i]
             i += 1
             if i % p == 0:
-                print(i, p)
                 norm_reconstructed_img = reconstructed_img.copy()
                 norm_reconstructed_img = self.normalize_img(norm_reconstructed_img)
                 yield Image.fromarray(norm_reconstructed_img).convert('L')
@@ -94,17 +92,5 @@ class Tomograph:
     def rmse(self, img1, img2):
         return np.sqrt(np.mean((img1-img2)**2))
 
-
-initial_img = Image.open('Input/Kwadraty2.jpg').convert('L')
-tomograph = Tomograph(initial_img)
-tomograph.generate_sinogram()
-i = 0
-for img in tomograph.reconstruct(n_images=3):
-    path = 'Output/Reconstructed_Image/part' + str(i) + '.jpg'
-    img.save(path)
-    i += 1
-else:
-    complete_img = img
-path = 'Output/Sinogram/sinogram.jpg'
-tomograph.get_sinogram().save(path)
-print(tomograph.rmse(np.asarray(initial_img), np.asarray(complete_img)))
+    def get_initial_img(self):
+        return self.img
